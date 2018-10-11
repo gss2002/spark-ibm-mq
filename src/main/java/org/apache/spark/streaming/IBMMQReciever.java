@@ -43,6 +43,7 @@ public class IBMMQReciever extends Receiver<String> {
 	String msgText = null;
 	JSONObject jsonOut;
 	long messagePutMs;
+	int seqNo;
 
 	public IBMMQReciever(String host, int port, String qmgrName, String channel, String queueName, String userName, String password) {
 		super(StorageLevel.MEMORY_ONLY_2());
@@ -117,9 +118,10 @@ public class IBMMQReciever extends Receiver<String> {
 						strData = new byte[strLen];
 						rcvMessage.readFully(strData);
 						messagePutMs = rcvMessage.putDateTime.getTimeInMillis();
+						seqNo = rcvMessage.messageSequenceNumber;
 						msgText = new String(strData);
 						jsonOut = new JSONObject();
-						jsonOut.put(Long.toString(messagePutMs), msgText);
+						jsonOut.put(Long.toString(messagePutMs)+"_"+seqNo, msgText);
 						store(jsonOut.toString());
 					}
 
