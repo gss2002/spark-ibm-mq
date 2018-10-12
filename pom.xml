@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.apache.spark.streaming</groupId>
 	<artifactId>spark-ibm-mq</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.1</version>
 	<name>spark-ibm-mq</name>
 
 	<properties>
@@ -17,6 +17,7 @@
 		<plugin.compiler.version>3.1</plugin.compiler.version>
 		<spark.version>2.2.1</spark.version>
 		<json.version>20160212</json.version>
+		<mq.version>9.0.4.0</mq.version>
 
 	</properties>
 
@@ -49,7 +50,7 @@
 		<dependency>
 			<groupId>com.ibm.mq</groupId>
 			<artifactId>com.ibm.mq.allclient</artifactId>
-			<version>9.0.4.0</version>
+			<version>${mq.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.json</groupId>
