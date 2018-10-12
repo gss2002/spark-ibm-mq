@@ -177,9 +177,6 @@ public class IBMMQReciever extends Receiver<String> {
 							gmo.options = MQConstants.MQGMO_CONVERT | MQConstants.MQGMO_PROPERTIES_FORCE_MQRFH2
 									| MQConstants.MQGMO_WAIT;
 						}
-						if (!(keepMessages)) {
-							gmo.options = gmo.options | MQConstants.MQGMO_MSG_UNDER_CURSOR;
-						}
 					} catch (MQException e) {
 						if (e.reasonCode == MQConstants.MQRC_NO_MSG_AVAILABLE) {
 							System.out.println("No Messages Available on Queue");
