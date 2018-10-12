@@ -33,8 +33,7 @@ public class IBMMQReciever extends Receiver<String> {
 	String password = null;
 	MQQueue queue = null;
 	int queueDepth = 0;
-	int openOptions = MQConstants.MQOO_INPUT_SHARED | MQConstants.MQOO_OUTPUT | MQConstants.MQOO_INQUIRE
-			| MQConstants.MQOO_BROWSE;
+	int openOptions = 0;
 	MQQueueManager qmgr;
 	MQMessage rcvMessage;
 	int strLen;
@@ -68,6 +67,12 @@ public class IBMMQReciever extends Receiver<String> {
 				this.waitInterval = Integer.parseInt(waitInterval);
 			}
 		}
+		if (this.keepMessages) {
+			this.openOptions = MQConstants.MQOO_INPUT_SHARED | MQConstants.MQOO_OUTPUT | MQConstants.MQOO_INQUIRE
+					| MQConstants.MQOO_BROWSE;
+		} else {
+			this.openOptions = MQConstants.MQOO_INPUT_SHARED | MQConstants.MQOO_OUTPUT | MQConstants.MQOO_INQUIRE;
+		}
 	}
 
 	public void onStart() {
@@ -95,9 +100,26 @@ public class IBMMQReciever extends Receiver<String> {
 					qmgr.close();
 				}
 			}
-		} catch (MQException e) {
+		} catch (MQException me) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println("Exception Reason Code: " + me.reasonCode);
+		} finally {
+			try {
+				if (queue != null) {
+					if (queue.isOpen()) {
+						queue.close();
+					}
+
+				}
+				if (qmgr != null) {
+					if (qmgr.isConnected()) {
+						qmgr.close();
+					}
+				}
+			} catch (MQException mqe) {
+				// TODO Auto-generated catch block
+				System.out.println("Exception Reason Code: " + mqe.reasonCode);
+			}
 		}
 
 	}
@@ -106,10 +128,11 @@ public class IBMMQReciever extends Receiver<String> {
 	private void receive() {
 		System.out.println("Started receiving messages from MQ");
 		MQGetMessageOptions gmo = new MQGetMessageOptions();
-		gmo.options = gmo.options | MQConstants.MQGMO_CONVERT | MQConstants.MQGMO_PROPERTIES_FORCE_MQRFH2
-				| MQConstants.MQGMO_BROWSE_FIRST;
-		if (!(keepMessages)) {
-			gmo.options = gmo.options | MQConstants.MQGMO_MSG_UNDER_CURSOR;
+		if (keepMessages) {
+			gmo.options = gmo.options | MQConstants.MQGMO_CONVERT | MQConstants.MQGMO_PROPERTIES_FORCE_MQRFH2
+					| MQConstants.MQGMO_BROWSE_FIRST;
+		} else {
+			gmo.options = gmo.options | MQConstants.MQGMO_CONVERT | MQConstants.MQGMO_PROPERTIES_FORCE_MQRFH2;
 		}
 		gmo.matchOptions = MQConstants.MQMO_NONE;
 		gmo.waitInterval = this.waitInterval;
@@ -144,8 +167,14 @@ public class IBMMQReciever extends Receiver<String> {
 						lastSeqNo = seqNo;
 
 						// move cursor to next message
-						gmo.options = MQConstants.MQGMO_CONVERT |MQConstants.MQGMO_PROPERTIES_FORCE_MQRFH2 | MQConstants.MQGMO_WAIT
-								| MQConstants.MQGMO_BROWSE_NEXT;
+						if (keepMessages) {
+
+							gmo.options = MQConstants.MQGMO_CONVERT | MQConstants.MQGMO_PROPERTIES_FORCE_MQRFH2
+									| MQConstants.MQGMO_WAIT | MQConstants.MQGMO_BROWSE_NEXT;
+						} else {
+							gmo.options = MQConstants.MQGMO_CONVERT | MQConstants.MQGMO_PROPERTIES_FORCE_MQRFH2
+									| MQConstants.MQGMO_WAIT;
+						}
 						if (!(keepMessages)) {
 							gmo.options = gmo.options | MQConstants.MQGMO_MSG_UNDER_CURSOR;
 						}
@@ -162,7 +191,7 @@ public class IBMMQReciever extends Receiver<String> {
 			} else {
 				stop("No Messages Available on Queue to Read");
 			}
-			
+
 		} catch (Throwable t) {
 			// restart if there is any other error
 			restart("Error receiving data from Queue or QMGR", t);
@@ -171,8 +200,8 @@ public class IBMMQReciever extends Receiver<String> {
 	}
 
 	public void initConnection() {
-	    final String JAVA_VENDOR_NAME = System.getProperty("java.vendor");
-	    final boolean IBM_JAVA = JAVA_VENDOR_NAME.contains("IBM");
+		final String JAVA_VENDOR_NAME = System.getProperty("java.vendor");
+		final boolean IBM_JAVA = JAVA_VENDOR_NAME.contains("IBM");
 		System.out.println("Initiating Connection to QMGR and Queue");
 		if (IBM_JAVA) {
 			System.setProperty("com.ibm.mq.cfg.useIBMCipherMappings", "true");
@@ -208,8 +237,9 @@ public class IBMMQReciever extends Receiver<String> {
 			}
 		} catch (MQException e) {
 			// TODO Auto-generated catch block
+			System.out.println("MQ ReasonCode: " + e.reasonCode);
 			e.printStackTrace();
-		} 
+		}
 
 		System.out.println("Queue Connection Established successfully!");
 
@@ -217,7 +247,7 @@ public class IBMMQReciever extends Receiver<String> {
 
 	@Override
 	public StorageLevel storageLevel() {
-		return StorageLevel.MEMORY_ONLY_2();
+		return StorageLevel.MEMORY_AND_DISK();
 	}
 
 }

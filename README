@@ -1,0 +1,7 @@
+spark.executor.instances=1
+spark.cores.max=1
+spark.streaming.receiver.maxRate=1000
+spark.cleaner.ttl=120
+spark.streaming.concurrentJobs=1
+spark.serializer=org.apache.spark.serializer.JavaSerializer
+spark.executor.cores=1
