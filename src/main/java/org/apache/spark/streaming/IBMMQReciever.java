@@ -49,7 +49,7 @@ public class IBMMQReciever extends Receiver<String> {
 
 	public IBMMQReciever(String host, int port, String qmgrName, String channel, String queueName, String userName,
 			String password, String waitInterval, String keepMessages) {
-		super(StorageLevel.MEMORY_ONLY_2());
+		super(StorageLevel.MEMORY_AND_DISK());
 		this.host = host;
 		this.port = port;
 		this.qmgrName = qmgrName;
@@ -98,6 +98,7 @@ public class IBMMQReciever extends Receiver<String> {
 			if (qmgr != null) {
 				if (qmgr.isConnected()) {
 					qmgr.close();
+					qmgr.disconnect();
 				}
 			}
 		} catch (MQException me) {
@@ -114,6 +115,7 @@ public class IBMMQReciever extends Receiver<String> {
 				if (qmgr != null) {
 					if (qmgr.isConnected()) {
 						qmgr.close();
+						qmgr.disconnect();
 					}
 				}
 			} catch (MQException mqe) {
