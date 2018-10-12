@@ -35,11 +35,11 @@ public class IBMMQReciever extends Receiver<String> {
 	int queueDepth = 0;
 	int openOptions = MQConstants.MQOO_INPUT_SHARED | MQConstants.MQOO_OUTPUT | MQConstants.MQOO_INQUIRE
 			| MQConstants.MQOO_BROWSE;
-	MQQueueManager qmgr = null;
+	MQQueueManager qmgr;
 	MQMessage rcvMessage;
 	int strLen;
 	byte[] strData;
-	String msgText = null;
+	String msgText;
 	JSONArray jsonOut;
 	JSONObject jsonKey;
 	JSONObject jsonValue;
