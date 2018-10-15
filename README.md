@@ -3,14 +3,15 @@
   
 JavaStreamingContext ssc = new JavaStreamingContext(sparkconf, new Duration(1000));  
 JavaDStream<String> mqStream = ssc.receiverStream(new IBMMQReciever("mqp1.example.com", 1414, "qmgrName", "MQ.CLIENT.CHANNEL.NAME", "userName", "password", "mqTimeWaitMS", "keepMessagesTrue/False"));  
+  
 mqStream.foreach(rdd -> {  
-   rdd.foreach(record -> {  
-   	JSONArray json = new JSONArray(record);  
-   	String key ((JSONObject) json.get(0)).getString("key");  
-   	String value ((JSONObject) json.get(1)).getString("value");  
-   	System.out.println("Key: "+key" :: Value:"+value);  
-   });  
-});  
+     rdd.foreach(record -> {  
+        JSONArray json = new JSONArray(record);  
+        String key ((JSONObject) json.get(0)).getString("key");  
+        String value ((JSONObject) json.get(1)).getString("value");  
+        System.out.println("Key: "+key" :: Value:"+value);  
+     });  
+ });  
   
 ssc.start();  
 ssc.awaitTermination();  
