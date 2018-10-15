@@ -1,4 +1,4 @@
-# Spark Streaming Reciever for Native IBM MQ Client Queue Access. (Non JMS)  
+# How to use the Native IBM MQ Client Receiver with Spark Streaming  
 #### How to use the Native IBM MQ Client Reciever  
   
 JavaStreamingContext ssc = new JavaStreamingContext(sparkconf, new Duration(1000));  
