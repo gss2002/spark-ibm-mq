@@ -1,8 +1,8 @@
 # How to use the Native IBM MQ Client Receiver with Spark Streaming  
-#### How to use the Native IBM MQ Client Reciever  
+#### How to use the Native IBM MQ Client Receiver  
   
 JavaStreamingContext ssc = new JavaStreamingContext(sparkconf, new Duration(1000));  
-JavaDStream<String> mqStream = ssc.receiverStream(new IBMMQReciever("mqp1.example.com", 1414, "qmgrName", "MQ.CLIENT.CHANNEL.NAME", "userName", "password", "mqTimeWaitMS", "keepMessagesTrue/False"));  
+JavaDStream<String> mqStream = ssc.receiverStream(new IBMMQReceiver("mqp1.example.com", 1414, "qmgrName", "MQ.CLIENT.CHANNEL.NAME", "userName", "password", "mqTimeWaitMS", "keepMessagesTrue/False"));  
   
 mqStream.foreach(rdd -> {  
     rdd.foreach(record -> {  

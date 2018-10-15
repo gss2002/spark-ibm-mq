@@ -18,7 +18,7 @@ import java.io.IOException;
 /**
  * Created by gsenia
  */
-public class IBMMQReciever extends Receiver<String> {
+public class IBMMQReceiver extends Receiver<String> {
 
 	/**
 	 * 
@@ -47,7 +47,7 @@ public class IBMMQReciever extends Receiver<String> {
 	int seqNo;
 	boolean keepMessages = true;
 
-	public IBMMQReciever(String host, int port, String qmgrName, String channel, String queueName, String userName,
+	public IBMMQReceiver(String host, int port, String qmgrName, String channel, String queueName, String userName,
 			String password, String waitInterval, String keepMessages) {
 		super(StorageLevel.MEMORY_AND_DISK());
 		this.host = host;
