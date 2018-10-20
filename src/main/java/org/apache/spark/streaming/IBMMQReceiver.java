@@ -44,12 +44,14 @@ public class IBMMQReceiver extends Receiver<String> {
 	JSONObject jsonValue;
 	long messagePutMs;
 	int waitInterval = 5000;
+	long threadWait = 5000L;
 	int seqNo;
 	boolean keepMessages = true;
+	int mqRateLimit = -1;
 
 	public IBMMQReceiver(String host, int port, String qmgrName, String channel, String queueName, String userName,
-			String password, String waitInterval, String keepMessages) {
-		super(StorageLevel.MEMORY_AND_DISK());
+			String password, String waitInterval, String keepMessages, String mqRateLimit) {
+		super(StorageLevel.MEMORY_AND_DISK_SER());
 		this.host = host;
 		this.port = port;
 		this.qmgrName = qmgrName;
@@ -62,9 +64,15 @@ public class IBMMQReceiver extends Receiver<String> {
 				this.keepMessages = Boolean.parseBoolean(keepMessages);
 			}
 		}
+		if (mqRateLimit != null) {
+			if (!(mqRateLimit.equalsIgnoreCase(""))) {
+				this.mqRateLimit = Integer.parseInt(mqRateLimit);
+			}
+		}
 		if (waitInterval != null) {
 			if (!(waitInterval.equalsIgnoreCase(""))) {
 				this.waitInterval = Integer.parseInt(waitInterval);
+				this.threadWait = Long.parseLong(waitInterval);
 			}
 		}
 		if (this.keepMessages) {
@@ -87,6 +95,10 @@ public class IBMMQReceiver extends Receiver<String> {
 	}
 
 	public void onStop() {
+		disconnectMq();
+	}
+
+	private void disconnectMq() {
 		try {
 
 			if (queue != null) {
@@ -103,7 +115,7 @@ public class IBMMQReceiver extends Receiver<String> {
 			}
 		} catch (MQException me) {
 			// TODO Auto-generated catch block
-			System.out.println("Exception Reason Code: " + me.reasonCode);
+			System.err.println("Exception Reason Code: " + me.reasonCode);
 		} finally {
 			try {
 				if (queue != null) {
@@ -120,15 +132,19 @@ public class IBMMQReceiver extends Receiver<String> {
 				}
 			} catch (MQException mqe) {
 				// TODO Auto-generated catch block
-				System.out.println("Exception Reason Code: " + mqe.reasonCode);
+				System.err.println("Exception Reason Code: " + mqe.reasonCode);
 			}
 		}
+	}
 
+	private void reconnectMq() {
+		disconnectMq();
+		initConnection();
 	}
 
 	/** Create a MQ connection and receive data until receiver is stopped */
 	private void receive() {
-		System.out.println("Started receiving messages from MQ");
+		MQLockObject mqLock = new MQLockObject();
 		MQGetMessageOptions gmo = new MQGetMessageOptions();
 		if (keepMessages) {
 			gmo.options = gmo.options | MQConstants.MQGMO_CONVERT | MQConstants.MQGMO_PROPERTIES_FORCE_MQRFH2
@@ -140,11 +156,12 @@ public class IBMMQReceiver extends Receiver<String> {
 		gmo.waitInterval = this.waitInterval;
 
 		try {
-			if (queueDepth != 0) {
-				int lastSeqNo = 0;
-				long lastTs = 0;
-				boolean messagesExist = true;
-				while (messagesExist) {
+			int lastSeqNo = 0;
+			long lastTs = 0;
+			int messagecounter = 0;
+			while (true) {
+				queueDepth = queue.getCurrentDepth();
+				if (queueDepth != 0) {
 					try {
 						rcvMessage = new MQMessage();
 						queue.get(rcvMessage, gmo);
@@ -167,10 +184,19 @@ public class IBMMQReceiver extends Receiver<String> {
 						store(jsonOut.toString());
 						lastTs = messagePutMs;
 						lastSeqNo = seqNo;
-
+						messagecounter++;
+						if (messagecounter == mqRateLimit) {
+							synchronized (mqLock) {
+								try {
+									messagecounter = 0;
+									mqLock.wait(threadWait);
+								} catch (InterruptedException ie) {
+									ie.printStackTrace();
+								}
+							}
+						}
 						// move cursor to next message
 						if (keepMessages) {
-
 							gmo.options = MQConstants.MQGMO_CONVERT | MQConstants.MQGMO_PROPERTIES_FORCE_MQRFH2
 									| MQConstants.MQGMO_WAIT | MQConstants.MQGMO_BROWSE_NEXT;
 						} else {
@@ -179,16 +205,31 @@ public class IBMMQReceiver extends Receiver<String> {
 						}
 					} catch (MQException e) {
 						if (e.reasonCode == MQConstants.MQRC_NO_MSG_AVAILABLE) {
-							System.out.println("No Messages Available on Queue");
+							System.out.println("No Messages Available on Queue: " + e.reasonCode);
+							synchronized (mqLock) {
+								try {
+									mqLock.wait(threadWait);
+								} catch (InterruptedException ie) {
+									ie.printStackTrace();
+								}
+							}
+						} else {
+							System.out.println("MQ Reason Code: " + e.reasonCode);
+							reconnectMq();
 						}
-						messagesExist = false;
-						stop("No Messages Avaialble on Queue to Read");
 					} catch (IOException ioe) {
-						System.out.println("Error: " + ioe.getMessage());
+						System.err.println("Error: " + ioe.getMessage());
+						reconnectMq();
+					}
+				} else {
+					synchronized (mqLock) {
+						try {
+							mqLock.wait(threadWait);
+						} catch (InterruptedException ie) {
+							ie.printStackTrace();
+						}
 					}
 				}
-			} else {
-				stop("No Messages Available on Queue to Read");
 			}
 
 		} catch (Throwable t) {
@@ -201,7 +242,6 @@ public class IBMMQReceiver extends Receiver<String> {
 	public void initConnection() {
 		final String JAVA_VENDOR_NAME = System.getProperty("java.vendor");
 		final boolean IBM_JAVA = JAVA_VENDOR_NAME.contains("IBM");
-		System.out.println("Initiating Connection to QMGR and Queue");
 		if (IBM_JAVA) {
 			System.setProperty("com.ibm.mq.cfg.useIBMCipherMappings", "true");
 		} else {
@@ -221,32 +261,25 @@ public class IBMMQReceiver extends Receiver<String> {
 		try {
 			qmgr = new MQQueueManager(qmgrName, properties);
 
-			if (qmgr.isConnected()) {
-				System.out.println("Connected to QMGR: " + qmgrName);
-			}
 			if (qmgr != null) {
 				queue = qmgr.accessQueue(queueName, openOptions);
 				if (queue != null) {
 					if (queue.isOpen()) {
-						System.out.println("Connected to Queue: " + queueName);
 						queueDepth = queue.getCurrentDepth();
-						System.out.println("Queue Depth: " + queueDepth);
+						System.out.println("Connected to Host: " + host + ":" + port + " :: QMGR: " + qmgrName
+								+ " :: Queue: " + queueName + " :: Queue Depth: " + queueDepth);
 					}
 				}
 			}
 		} catch (MQException e) {
 			// TODO Auto-generated catch block
-			System.out.println("MQ ReasonCode: " + e.reasonCode);
-			e.printStackTrace();
+			System.out.println("MQ ReasonCode: " + e.reasonCode + " :: " + e.getErrorCode());
 		}
-
-		System.out.println("Queue Connection Established successfully!");
-
 	}
 
 	@Override
 	public StorageLevel storageLevel() {
-		return StorageLevel.MEMORY_AND_DISK();
+		return StorageLevel.MEMORY_AND_DISK_SER();
 	}
 
 }
