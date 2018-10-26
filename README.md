@@ -18,7 +18,7 @@ mqStream.foreach(rdd -> {
   
 ssc.start();  
 ssc.awaitTermination();
-```  
+  
 ```
  
  
@@ -50,12 +50,12 @@ Checkpoint/WriteAheadLogs Model:
 		   });          
         return ssc;
        }
-     }); 
-     
+     });       
      ssc.start();  
      ssc.awaitTermination();
                  
 ```
+
 #### Set Spark Streaming Job with the following parameters if using this to keep order from say DB2QREP or some other Queue based Data Replication Tool  
 spark.executor.instances=1  
 spark.cores.max=2  
