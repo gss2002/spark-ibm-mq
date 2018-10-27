@@ -41,7 +41,7 @@ Checkpoint/WriteAheadLogs Model:
            sparkUser = ssc.sparkContext().sparkUser();
            JavaDStream<String> mqStream = ssc.receiverStream(new IBMMQReceiver(qmgrHost, Integer.parseInt(qmgrPort), qmgrName, qmgrChannel, mqQueue, mqUser, mqPassword, mqWait, mqKeepMessages, mqRateLimit));
            mqStream.foreach(rdd -> {  
-    			 rdd.foreach(record -> {  
+              rdd.foreach(record -> {  
         	        JSONArray json = new JSONArray(record);  
                  String key ((JSONObject) json.get(0)).getString("key");  
                  String value ((JSONObject) json.get(1)).getString("value");  
