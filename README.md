@@ -42,13 +42,13 @@ Checkpoint/WriteAheadLogs Model:
            JavaDStream<String> mqStream = ssc.receiverStream(new IBMMQReceiver(qmgrHost, Integer.parseInt(qmgrPort), qmgrName, qmgrChannel, mqQueue, mqUser, mqPassword, mqWait, mqKeepMessages, mqRateLimit));
            mqStream.foreach(rdd -> {  
     			 rdd.foreach(record -> {  
-        		   JSONArray json = new JSONArray(record);  
-        		   String key ((JSONObject) json.get(0)).getString("key");  
-        		   String value ((JSONObject) json.get(1)).getString("value");  
-        		   System.out.println("Key: "+key" :: Value:"+value);  
-    			 });  
-		   });          
-        return ssc;
+        	        JSONArray json = new JSONArray(record);  
+                 String key ((JSONObject) json.get(0)).getString("key");  
+                 String value ((JSONObject) json.get(1)).getString("value");  
+                 System.out.println("Key: "+key" :: Value:"+value);  
+              });  
+           });          
+           return ssc;
        }
      });       
      ssc.start();  
@@ -66,7 +66,8 @@ spark.serializer=org.apache.spark.serializer.JavaSerializer
 spark.executor.cores=2  
 
 ##### Use Sparks writeAheadLog Feature when using IBM MQ if not messages can be lost
-spark.streaming.receiver.blockStoreTimeout=300
+spark.streaming.receiver.blockStoreTimeout=300  
 spark.streaming.receiver.writeAheadLog.enable=true  
 spark.streaming.driver.writeAheadLog.closeFileAfterWrite=true  
-spark.streaming.receiver.writeAheadLog.closeFileAfterWrite=true
+spark.streaming.receiver.writeAheadLog.closeFileAfterWrite=true  
+
