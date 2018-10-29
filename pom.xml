@@ -6,6 +6,12 @@
 	<artifactId>spark-ibm-mq</artifactId>
 	<version>0.1</version>
 	<name>spark-ibm-mq</name>
+	<distributionManagement>
+		<repository>
+			<id>sftp-repository</id>
+			<url>scpexe://lnxgen.senia.org/u01/m2/repository/</url>
+		</repository>
+	</distributionManagement>
 
 	<properties>
 
@@ -15,7 +21,7 @@
 		<scala.binary.version>2.11</scala.binary.version>
 		<plugin.scala.version>2.15.2</plugin.scala.version>
 		<plugin.compiler.version>3.1</plugin.compiler.version>
-		<spark.version>2.2.1</spark.version>
+		<spark.version>2.2.2</spark.version>
 		<json.version>20160212</json.version>
 		<mq.version>9.0.4.0</mq.version>
 
@@ -26,25 +32,25 @@
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-sql_${scala.binary.version}</artifactId>
 			<version>${spark.version}</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-streaming_${scala.binary.version}</artifactId>
 			<version>${spark.version}</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-sql_${scala.binary.version}</artifactId>
 			<version>${spark.version}</version>
-			<type>test-jar</type>
-			<scope>test</scope>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.spark</groupId>
 			<artifactId>spark-core_${scala.binary.version}</artifactId>
 			<version>${spark.version}</version>
-			<type>test-jar</type>
-			<scope>test</scope>
+			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -60,6 +66,14 @@
 	</dependencies>
 
 	<build>
+		<extensions>
+			<!-- Enabling the use of SSH -->
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh-external</artifactId>
+				<version>1.0-beta-6</version>
+			</extension>
+		</extensions>
 		<plugins>
 
 			<plugin>
