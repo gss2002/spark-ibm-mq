@@ -64,10 +64,18 @@ spark.cleaner.ttl=120
 spark.streaming.concurrentJobs=1  
 spark.serializer=org.apache.spark.serializer.JavaSerializer  
 spark.executor.cores=2  
+spark.hadoop.fs.hdfs.impl.disable.cache=true  
+spark.dynamicAllocation.enabled=false  
+spark.streaming.backpressure.enabled=true  
 
 ##### Use Sparks writeAheadLog Feature when using IBM MQ if not messages can be lost
 spark.streaming.receiver.blockStoreTimeout=300  
 spark.streaming.receiver.writeAheadLog.enable=true  
 spark.streaming.driver.writeAheadLog.closeFileAfterWrite=true  
 spark.streaming.receiver.writeAheadLog.closeFileAfterWrite=true  
+
+##### For long running Spark or Flink Jobs on YARN the following yarn-site.xml entry needs to be set  
+yarn.resourcemanager.proxy-user-privileges.enabled=true  
+
+
 
