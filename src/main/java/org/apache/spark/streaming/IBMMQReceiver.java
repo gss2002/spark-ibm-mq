@@ -7,6 +7,9 @@ import com.ibm.mq.MQQueue;
 import com.ibm.mq.MQQueueManager;
 import com.ibm.mq.constants.MQConstants;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.receiver.Receiver;
 import org.json.JSONArray;
@@ -48,6 +51,12 @@ public class IBMMQReceiver extends Receiver<String> {
 	int seqNo;
 	boolean keepMessages = true;
 	int mqRateLimit = -1;
+	long lastCheckTime = 0;
+	long timeMillis = 60000;
+	long currentTime;
+	long elapsedTime;
+	boolean haltStatus = false;
+	boolean readQueue = true;
 
 	public IBMMQReceiver(String host, int port, String qmgrName, String channel, String queueName, String userName,
 			String password, String waitInterval, String keepMessages, String mqRateLimit) {
@@ -100,7 +109,7 @@ public class IBMMQReceiver extends Receiver<String> {
 
 	private void disconnectMq() {
 		try {
-
+			
 			if (queue != null) {
 				if (queue.isOpen()) {
 					queue.close();
@@ -161,7 +170,18 @@ public class IBMMQReceiver extends Receiver<String> {
 			int messagecounter = 0;
 			while (true) {
 				queueDepth = queue.getCurrentDepth();
-				if (queueDepth != 0) {
+				haltFileExists();
+				if (queueDepth == 0) {
+					readQueue = false;
+				} else {
+					readQueue = true;
+				}
+				if (haltStatus) {
+					readQueue = false;
+				} else {
+					readQueue = true;
+				}
+				if (readQueue) {
 					try {
 						rcvMessage = new MQMessage();
 						queue.get(rcvMessage, gmo);
@@ -280,6 +300,24 @@ public class IBMMQReceiver extends Receiver<String> {
 	@Override
 	public StorageLevel storageLevel() {
 		return StorageLevel.MEMORY_AND_DISK_SER();
+	}
+
+	public Boolean haltFileExists() throws IOException {
+		currentTime = System.currentTimeMillis();
+		elapsedTime = currentTime - lastCheckTime;
+		if (elapsedTime > timeMillis) {
+			lastCheckTime = System.currentTimeMillis();
+			String fileName = "/user/" + System.getProperty("user.name") + "/" + queueName + ".halt";
+			Configuration conf = new Configuration();
+			FileSystem fs;
+			fs = FileSystem.get(conf);
+			if (fs.exists(new Path(fileName))) {
+				haltStatus = true;
+			} else {
+				haltStatus = false;
+			}
+		}
+		return haltStatus;
 	}
 
 }
