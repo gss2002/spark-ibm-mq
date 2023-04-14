@@ -34,7 +34,7 @@
 		<plugin.scala.version>2.15.2</plugin.scala.version>
 		<plugin.compiler.version>3.1</plugin.compiler.version>
 		<spark.version>2.3.2</spark.version>
-		<json.version>20160212</json.version>
+		<json.version>20230227</json.version>
 		<mq.version>9.0.4.0</mq.version>
 
 	</properties>
